@@ -178,7 +178,7 @@ from PIL import Image, ImageDraw
 FLASK_BIND_ADDRESS = '0.0.0.0'
 FLASK_PORT = 80
 #LOGO_IMAGE = '/o-h.png'
-#LOGO_RESIZE = (11,10)
+#LOGO_SIZE = (11,10)
 LOGO_IMAGE = '/ibm.png'
 LOGO_SIZE = (27,12)
 INCOMING_IMAGE = '/tmp/incoming.jpg'
@@ -216,14 +216,14 @@ if __name__ == "__main__":
 
   # Outline an entity, and label it with its name and confidence
   def outline(original, draw, entity, confidence, bl_x, bl_y, w, h):
-    label = (" %s (%0.2f)" % (entity, 100.0 * confidence))
+    label = (" %s (%0.2f%%)" % (entity, 100.0 * confidence))
     print ("LABEL: %s" % (label))
     shape = [bl_x, bl_y, bl_x + w, bl_y + h]
     draw.rectangle(shape, fill=None, outline=COLOR_OUTLINE)
     shape = [bl_x, bl_y - 14, bl_x + w, bl_y]
     draw.rectangle(shape, fill=COLOR_OUTLINE, outline=None)
     draw.text((bl_x + LOGO_SIZE[0], bl_y - 12), label, fill=COLOR_LABEL)
-    original.paste(logo, (int(bl_x), int(bl_y - 12)))
+    original.paste(logo, (int(bl_x + 3), int(bl_y - 12)))
 
   #
   # Expose the YoloV3 "detect()" function
