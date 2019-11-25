@@ -2,7 +2,6 @@
   "name": "pattern-yolo",
   "services": [
 
-
     {
       "serviceUrl": "mqtt2kafka",
       "serviceOrgid": "$HZN_ORG_ID",
@@ -79,6 +78,7 @@
       "serviceArch": "amd64",
       "serviceVersions": [ { "version": "1.0.2" } ]
     }
+
   ]
 }
 

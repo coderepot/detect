@@ -214,6 +214,9 @@ if __name__ == "__main__":
   biglogo = Image.open(LOGO_IMAGE)
   logo = biglogo.resize(LOGO_SIZE, Image.LANCZOS)
 
+  # Force the timezone in the container to be UTC
+  os.environ['TZ']='UTC'
+
   # Outline an entity, and label it with its name and confidence
   def outline(original, draw, entity, confidence, bl_x, bl_y, w, h):
     label = (" %s (%0.2f%%)" % (entity, 100.0 * confidence))
@@ -245,7 +248,7 @@ if __name__ == "__main__":
 
     kind = request.args.get('kind', '')
     if (kind != 'json'):
-      return (json.dumps({"error": "kind must be 'json'"}), 400)
+      return (json.dumps({"error": "kind must be 'json'"}) + '\n', 400)
     url = request.args.get('url', '')
     print("URL is:   %s" % url)
     user = request.args.get('user', '')
@@ -261,24 +264,32 @@ if __name__ == "__main__":
     else:
       r = requests.get(url)
     if (r.status_code > 299):
-      return (json.dumps({"error": "unable to get image from camera"}), 400)
+      return (json.dumps({"error": "unable to get image from camera"}) + '\n', 400)
     #if (r.headers['content-type'] != 'application/json; charset=utf8'):
-    #  return (json.dumps({"error": "camera did not return 'json'"}), 400)
+    #  return (json.dumps({"error": "camera did not return 'json'"}) + '\n', 400)
     j = r.json()
-    i = base64.b64decode(j['cam']['image'])
+    source_image_b64 = j['cam']['image']
+    i = base64.b64decode(source_image_b64)
     buffer = BytesIO()
     buffer.write(i)
     buffer.seek(0)
     with open(INCOMING_IMAGE,'wb') as outfile:
       outfile.write(buffer.read())
+    # @@@ Ideally detect() should use the image in memory instead of a file
     r = detect(net, meta, INCOMING_IMAGE)
     #print r
-    # Should use the function below instead of reading from a file:
-    # PIL.Image.frombytes(mode, size, data, decoder_name='raw', *args)[source]
+    # @@@ This should use Image.fromBytes instead of reading this phytsical file
+    prediction_start = time.time()
     prediction = Image.open(INCOMING_IMAGE)
+    prediction_end = time.time()
+    # Process the prediction result, drawing outline boxes around entities
+    # Construct the return JSON as we go too
+    data = {}
+    entity_data = []
     draw = ImageDraw.Draw(prediction)
     os.remove(INCOMING_IMAGE)
     for k in range(len(r)):
+      # Prepare info for the prediction image
       entity =  r[k][0]
       confidence =  r[k][1]
       center_x = r[k][2][0]
@@ -288,8 +299,34 @@ if __name__ == "__main__":
       bottomLeft_x = center_x - (width / 2)
       bottomLeft_y = center_y - (height / 2)
       outline(prediction, draw, entity, confidence, bottomLeft_x, bottomLeft_y, width, height)
+      # Prepare info for the retuen JSON payload
+      this_entity = {}
+      this_entity['name'] = entity
+      this_entity['confidence'] = confidence
+      this_entity['cx'] = center_x
+      this_entity['cy'] = center_y
+      this_entity['w'] = width
+      this_entity['h'] = height
+      entity_data.append(this_entity)
     prediction.save(OUTGOING_IMAGE)
-    return (json.dumps({"cool":"man"}) + '\n', 200)
+    buffer = BytesIO()
+    prediction.save(buffer, format='JPEG')
+    buffer.seek(0)
+    prediction_image_b64 = base64.b64encode(buffer.read())
+    detect_data = {}
+    detect_data['device'] = os.environ['HZN_DEVICE_ID']
+    detect_data['tool'] = 'yolov3-tiny'
+    detect_data['date'] = int(time.time())
+    detect_data['time'] = (prediction_end - prediction_start)
+    detect_data['entities'] = entity_data
+    #detect_data['source'] = ' ... base64-encoded original image ... '
+    #detect_data['prediction'] = ' ... base64-encoded prediction image with entity outlines ... '
+    detect_data['source'] = source_image_b64
+    detect_data['prediction'] = prediction_image_b64
+    data['detect'] = detect_data
+    #print data
+    json_data = json.dumps(data)
+    return (json_data + '\n', 200)
 
   # Start up the REST server
   webapp.run(host=FLASK_BIND_ADDRESS, port=FLASK_PORT)
