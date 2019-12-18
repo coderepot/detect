@@ -6,7 +6,9 @@
   "version": "$SERVICE_VERSION",
   "arch": "$ARCH",
   "sharable": "singleton",
-  "requiredServices": [],
+  "requiredServices": [
+    { "org": "$HZN_ORG_ID", "url": "restcam", "version": "1.0.0", "arch": "$ARCH" }
+  ],
   "userInput": [],
   "deployment": {
     "services": {

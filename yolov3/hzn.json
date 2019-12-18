@@ -2,6 +2,6 @@
     "MetadataVars": {
         "DOCKER_IMAGE_BASE": "ibmosquito/yolov3",
         "SERVICE_NAME": "yolov3",
-        "SERVICE_VERSION": "1.0.0"
+        "SERVICE_VERSION": "1.0.1"
     }
 }

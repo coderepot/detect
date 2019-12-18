@@ -30,7 +30,7 @@ KAFKA_PUB_COMMAND = 'kafkacat -P -b ' + EVENTSTREAMS_BROKER_URLS + ' -X api.vers
 SLEEP_BETWEEN_CALLS = 0.1
 
 # To log or not to log, that is the question
-LOG_STATS = True
+LOG_STATS = False
 LOG_ALL = False
 
 if __name__ == '__main__':
@@ -38,7 +38,9 @@ if __name__ == '__main__':
   while True:
 
     # Request one run from yolov3...
-    if LOG_ALL: print('\nInitiating a request...')
+    if LOG_ALL:
+      print('\nInitiating a request...')
+      print('--> URL: ' + YOLO_URL)
     r = requests.get(YOLO_URL)
     if (r.status_code > 299):
         print('ERROR: Yolo request failed: ' + str(r.status_code))
