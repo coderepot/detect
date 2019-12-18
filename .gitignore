@@ -1,1 +1,4 @@
+.hzn.json.tmp.mk
 /input.json
+/patterns/yolo-input.json
+/patterns/yolov3-input.json

@@ -1,4 +1,4 @@
-# A simple local MQTT broker for Horizon servcies to use
+# A driver that calls the yolov3 detector, and pushed data to both mqtt and kafka
 
 # ----------------------------------------------------------------------------
 
@@ -24,25 +24,30 @@ publish-service:
 
 # Remove the local container image
 clean:
-	-docker rmi $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION) 2>/dev/null || :
-	rm -f .hzn.json.tmp.mk
+	@docker rmi $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION) 2>/dev/null || :
+	@rm -f .hzn.json.tmp.mk
 
 # ----------------------------------------------------------------------------
 
 dev:
-	-docker network create mqtt-net 2>/dev/null || :
-	-docker rm -f restcam 2>/dev/null || :
-	docker run -it -e CAM_DEVICE="V4L2:/dev/video0" --privileged --name restcam --network=mqtt-net --net-alias=restcam $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION) bash
+	-docker rm -f app 2>/dev/null || :
+	docker run -it -v `pwd`:/outside \
+	   -e HZN_DEVICE_ID="${HZN_DEVICE_ID}" \
+	   -e EVENTSTREAMS_BROKER_URLS="${EVENTSTREAMS_BROKER_URLS}" \
+	   -e EVENTSTREAMS_API_KEY="${EVENTSTREAMS_API_KEY}" \
+	   -e EVENTSTREAMS_PUB_TOPIC="${EVENTSTREAMS_PUB_TOPIC}" \
+	   --name app --network mqtt-net --network-alias app \
+	   $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION) /bin/sh
 
-test-cam:
-	-docker network create mqtt-net 2>/dev/null || :
-	-docker rm -f restcam 2>/dev/null || :
-	docker run --rm -d -p 8888:80 -e CAM_DEVICE="V4L2:/dev/video0" --privileged --name restcam --network=mqtt-net --net-alias=restcam $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION)
-
-test-get:
-	curl -sS localhost:8888 | jq --raw-output --join-output '.cam.image' | base64 -d > foo.jpg
-test-end:
-	docker rm -f restcam
+test-app:
+	-docker rm -f app 2>/dev/null || :
+	docker run --rm -d \
+	   -e HZN_DEVICE_ID="${HZN_DEVICE_ID}" \
+	   -e EVENTSTREAMS_BROKER_URLS="${EVENTSTREAMS_BROKER_URLS}" \
+	   -e EVENTSTREAMS_API_KEY="${EVENTSTREAMS_API_KEY}" \
+	   -e EVENTSTREAMS_PUB_TOPIC="${EVENTSTREAMS_PUB_TOPIC}" \
+	   --name app --network mqtt-net --network-alias app \
+	   $(DOCKER_IMAGE_BASE)_$(ARCH):$(SERVICE_VERSION)
 
 # ----------------------------------------------------------------------------
 

@@ -54,8 +54,6 @@ class METADATA(Structure):
     _fields_ = [("classes", c_int),
                 ("names", POINTER(c_char_p))]
 
-    
-
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
 lib = CDLL("libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
@@ -217,10 +215,13 @@ if __name__ == "__main__":
   # Force the timezone in the container to be UTC
   os.environ['TZ']='UTC'
 
+  # Ready to receive requests...
+  print("Initialization is complete...\n\n")
+
   # Outline an entity, and label it with its name and confidence
   def outline(original, draw, entity, confidence, bl_x, bl_y, w, h):
     label = (" %s (%0.2f%%)" % (entity, 100.0 * confidence))
-    print ("LABEL: %s" % (label))
+    #print ("LABEL: %s" % (label))
     shape = [bl_x, bl_y, bl_x + w, bl_y + h]
     draw.rectangle(shape, fill=None, outline=COLOR_OUTLINE)
     shape = [bl_x, bl_y - 14, bl_x + w, bl_y]
@@ -246,11 +247,12 @@ if __name__ == "__main__":
   @webapp.route("/detect", methods=['GET'])
   def get_detect():
 
+    #print("\n\nREST request received.")
     kind = request.args.get('kind', '')
     if (kind != 'json'):
       return (json.dumps({"error": "kind must be 'json'"}) + '\n', 400)
     url = request.args.get('url', '')
-    print("URL is:   %s" % url)
+    #print("URL is:   %s" % url)
     user = request.args.get('user', '')
     password = request.args.get('password', '')
     thresh = request.args.get('thresh', '')
@@ -258,7 +260,8 @@ if __name__ == "__main__":
     nms = request.args.get('nms', '')
 
     # Pull image from the provided camera URL
-    print("\nPulling an image from the camera REST service...\n")
+    #print("Pulling an image from the camera REST service...")
+    cam_start = time.time()
     if ('' != user):
       r = requests.get(url, auth=(user, password))
     else:
@@ -267,6 +270,7 @@ if __name__ == "__main__":
       return (json.dumps({"error": "unable to get image from camera"}) + '\n', 400)
     #if (r.headers['content-type'] != 'application/json; charset=utf8'):
     #  return (json.dumps({"error": "camera did not return 'json'"}) + '\n', 400)
+    cam_end = time.time()
     j = r.json()
     source_image_b64 = j['cam']['image']
     i = base64.b64decode(source_image_b64)
@@ -275,17 +279,20 @@ if __name__ == "__main__":
     buffer.seek(0)
     with open(INCOMING_IMAGE,'wb') as outfile:
       outfile.write(buffer.read())
+    #print("Image is ready for yolo...")
+
+    prediction_start = time.time()
     # @@@ Ideally detect() should use the image in memory instead of a file
     r = detect(net, meta, INCOMING_IMAGE)
+    prediction_end = time.time()
+    #print("Yolo is finished. Preparing prediction image and formatting data...")
     #print r
     # @@@ This should use Image.fromBytes instead of reading this phytsical file
-    prediction_start = time.time()
     prediction = Image.open(INCOMING_IMAGE)
-    prediction_end = time.time()
     # Process the prediction result, drawing outline boxes around entities
     # Construct the return JSON as we go too
     data = {}
-    entity_data = []
+    entity_raw = {}
     draw = ImageDraw.Draw(prediction)
     os.remove(INCOMING_IMAGE)
     for k in range(len(r)):
@@ -299,33 +306,40 @@ if __name__ == "__main__":
       bottomLeft_x = center_x - (width / 2)
       bottomLeft_y = center_y - (height / 2)
       outline(prediction, draw, entity, confidence, bottomLeft_x, bottomLeft_y, width, height)
-      # Prepare info for the retuen JSON payload
-      this_entity = {}
-      this_entity['name'] = entity
-      this_entity['confidence'] = confidence
-      this_entity['cx'] = center_x
-      this_entity['cy'] = center_y
-      this_entity['w'] = width
-      this_entity['h'] = height
-      entity_data.append(this_entity)
+      if not (entity in entity_raw):
+        this_entity = {}
+        this_entity['eclass'] = entity
+        this_entity['details'] = []
+        entity_raw[entity] = this_entity
+      this_entity = entity_raw[entity]
+      # Prepare info for the return JSON payload
+      this_instance = {}
+      this_instance['confidence'] = round(confidence, 3)
+      this_instance['cx'] = int(center_x)
+      this_instance['cy'] = int(center_y)
+      this_instance['w'] = int(width)
+      this_instance['h'] = int(height)
+      this_entity['details'].append(this_instance)
     prediction.save(OUTGOING_IMAGE)
     buffer = BytesIO()
     prediction.save(buffer, format='JPEG')
     buffer.seek(0)
     prediction_image_b64 = base64.b64encode(buffer.read())
+    entity_data = []
+    for cls in entity_raw:
+      entity_data.append(entity_raw[cls])
     detect_data = {}
-    detect_data['device'] = os.environ['HZN_DEVICE_ID']
+    detect_data['deviceid'] = os.environ['HZN_DEVICE_ID']
     detect_data['tool'] = 'yolov3-tiny'
     detect_data['date'] = int(time.time())
-    detect_data['time'] = (prediction_end - prediction_start)
+    detect_data['camtime'] = round(cam_end - cam_start, 3)
+    detect_data['time'] = round(prediction_end - prediction_start, 3)
     detect_data['entities'] = entity_data
-    #detect_data['source'] = ' ... base64-encoded original image ... '
-    #detect_data['prediction'] = ' ... base64-encoded prediction image with entity outlines ... '
-    detect_data['source'] = source_image_b64
-    detect_data['prediction'] = prediction_image_b64
+    detect_data['image'] = prediction_image_b64
     data['detect'] = detect_data
     #print data
     json_data = json.dumps(data)
+    #print("Returning REST response...")
     return (json_data + '\n', 200)
 
   # Start up the REST server

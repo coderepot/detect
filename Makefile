@@ -1,11 +1,29 @@
 
-register-yolo:
-	hzn register --pattern "${HZN_ORG_ID}/pattern-yolo" --input-file ./input.json
+register-v3:
+	hzn register --pattern "${HZN_ORG_ID}/pattern-yolov3" --input-file ./patterns/yolov3-input.json
 
-publish-pattern:
-	hzn exchange pattern publish -f pattern-yolo.json
+register-v2:
+	hzn register --pattern "${HZN_ORG_ID}/pattern-yolo" --input-file ./patterns/yolo-input.json
 
-test-all:
+publish-pattern-v3:
+	hzn exchange pattern publish -f patterns/pattern-yolov3.json
+
+publish-all-patterns-v2:
+	hzn exchange pattern publish -f patterns/pattern-yolo-all.json
+
+test-all-v3:
+	make -C mqtt
+	make -C mqtt test-broker
+	make -C restcam
+	make -C restcam test-cam
+	make -C watcher2
+	make -C watcher2 test-watcher
+	make -C yolov3
+	make -C yolov3 test-yolov3
+	make -C app
+	make -C app test-app
+
+test-all-v2:
 	make -C mqtt
 	make -C mqtt test-broker
 	make -C cam
@@ -17,12 +35,34 @@ test-all:
 	make -C mqtt2kafka
 	make -C mqtt2kafka test-kafka
 
-clean-docker-all:
+clean-docker-containers:
 	-docker rm -f `docker ps -aq` 2>/dev/null || :
-	-docker rmi -f `docker images -aq` 2>/dev/null || :
 	-docker network rm mqtt-net 2>/dev/null || :
 
-publish-all:
+clean-docker-all:
+	-docker rm -f `docker ps -aq` 2>/dev/null || :
+	-docker network rm mqtt-net 2>/dev/null || :
+	-docker rmi -f `docker images -aq` 2>/dev/null || :
+
+publish-all-v3:
+	make -C mqtt
+	make -C mqtt push
+	make -C mqtt publish-service
+	make -C restcam
+	make -C restcam push
+	make -C restcam publish-service
+	make -C yolov3
+	make -C yolov3 push
+	make -C yolov3 publish-service
+	make -C app
+	make -C app push
+	make -C app publish-service
+	make -C watcher2
+	make -C watcher2 push
+	make -C watcher2 publish-service
+
+
+publish-all-v2:
 	make -C mqtt
 	make -C mqtt push
 	make -C mqtt publish-service
@@ -38,4 +78,3 @@ publish-all:
 	make -C mqtt2kafka
 	make -C mqtt2kafka push
 	make -C mqtt2kafka publish-service
-

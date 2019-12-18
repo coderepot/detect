@@ -1,0 +1,7 @@
+{
+    "MetadataVars": {
+        "DOCKER_IMAGE_BASE": "ibmosquito/app",
+        "SERVICE_NAME": "app",
+        "SERVICE_VERSION": "1.0.0"
+    }
+}
