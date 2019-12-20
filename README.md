@@ -9,7 +9,7 @@ This is what the architecture looks like for v3. Containers used are in director
 
 In the yolov3 version, the action is driven by the app container. It invokes the REST API provided by the yolov3 container. The yolov3 container in turn invokes the REST API of the restcam container to get an image (base64-encoded, within a JSON structure). Once it gets the image, it runs it through darknet yolo v3-tiny and produces a new image with detected entities annotated and returns a JSON structure with that new image base64-encoded and with an array of detected entity details to the app caller. The app container then sends it out over kafka to the cloud. The app container also posts it to the "/detect" topic on the local MQTT broker (the mqtt container) for debugging purposes. The watcher2 container subscribes to this topic and for debugging purposes renders the results in a browser (its server is available on port 5200).
 
-Here is an example of a resultin annotated image:
+Here is an example of a resulting annotated image:
 
 ![example-image](https://raw.githubusercontent.com/MegaMosquito/detect/master/example.jpg)
 
