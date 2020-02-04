@@ -2,6 +2,10 @@
 
 # ----------------------------------------------------------------------------
 
+ifndef DOCKER_BASE
+$(error DOCKER_BASE is not set)
+endif
+
 # You must always use the Horizon name for architecture (`hzn architecture`)
 export ARCH ?= $(shell hzn architecture)
 

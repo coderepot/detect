@@ -1,6 +1,6 @@
 {
     "MetadataVars": {
-        "DOCKER_IMAGE_BASE": "ibmosquito/watcher2",
+        "DOCKER_IMAGE_BASE": "$(DOCKER_BASE)/watcher2",
         "SERVICE_NAME": "watcher2",
         "SERVICE_VERSION": "1.0.0"
     }

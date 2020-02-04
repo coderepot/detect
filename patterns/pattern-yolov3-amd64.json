@@ -1,16 +1,16 @@
 {
-  "name": "pattern-yolov3",
+  "name": "pattern-yolov3-amd64",
   "services": [
     {
       "serviceUrl": "app",
       "serviceOrgid": "$HZN_ORG_ID",
-      "serviceArch": "arm64",
+      "serviceArch": "amd64",
       "serviceVersions": [ { "version": "1.0.3" } ]
     },
     {
       "serviceUrl": "watcher2",
       "serviceOrgid": "$HZN_ORG_ID",
-      "serviceArch": "arm64",
+      "serviceArch": "amd64",
       "serviceVersions": [ { "version": "1.0.0" } ]
     }
   ]

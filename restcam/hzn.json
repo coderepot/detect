@@ -1,6 +1,6 @@
 {
     "MetadataVars": {
-        "DOCKER_IMAGE_BASE": "ibmosquito/restcam",
+        "DOCKER_IMAGE_BASE": "$(DOCKER_BASE)/restcam",
         "SERVICE_NAME": "restcam",
         "SERVICE_VERSION": "1.0.0"
     }

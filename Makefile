@@ -8,6 +8,9 @@ register-v2:
 publish-pattern-v3:
 	hzn exchange pattern publish -f patterns/pattern-yolov3.json
 
+publish-pattern-v3-amd64:
+	hzn exchange pattern publish -f patterns/pattern-yolov3-amd64.json
+
 publish-all-patterns-v2:
 	hzn exchange pattern publish -f patterns/pattern-yolo-all.json
 
